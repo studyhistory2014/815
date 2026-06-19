@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>독립운동가의 선택</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #1B4FD8; --blue-light: #EEF2FF; --blue-dark: #1e3a8a;
+    --red: #DC2626; --red-light: #FEF2F2; --red-dark: #991b1b;
+    --bg: #F8F7F4; --card: #FFFFFF; --text: #1a1a1a; --muted: #6b7280;
+    --border: rgba(0,0,0,0.08); --radius: 16px; --radius-sm: 10px;
+  }
+  html, body { height: 100%; font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif; background: #e5e7eb; color: var(--text); }
+  #app { max-width: 390px; margin: 0 auto; min-height: 100vh; background: var(--bg); position: relative; overflow: hidden; }
+  .screen { display: none; flex-direction: column; min-height: 100vh; animation: fadeIn 0.35s ease; }
+  .screen.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* SPLASH */
+  #screen-splash {
+    background: linear-gradient(160deg, #0f2d6b 0%, #1B4FD8 55%, #b91c1c 100%);
+    align-items: center; justify-content: center; text-align: center; padding: 40px 28px;
+  }
+  .splash-flag { font-size: 56px; margin-bottom: 16px; }
+  .splash-title { font-size: 28px; font-weight: 800; color: #fff; letter-spacing: -0.5px; line-height: 1.3; }
+  .splash-tagline { margin: 32px 0; }
+  .splash-tagline p { font-size: 17px; color: rgba(255,255,255,0.9); line-height: 1.65; }
+  .splash-tagline p:first-child { font-size: 19px; font-weight: 600; color: #fff; margin-bottom: 10px; }
+  .name-input-wrap { width: 100%; margin-bottom: 16px; }
+  .name-input-wrap input {
+    width: 100%; padding: 14px 18px; border-radius: var(--radius-sm);
+    border: 1.5px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.12); color: #fff; font-size: 15px; text-align: center;
+    outline: none; transition: border 0.2s;
+  }
+  .name-input-wrap input::placeholder { color: rgba(255,255,255,0.5); }
+  .name-input-wrap input:focus { border-color: rgba(255,255,255,0.7); }
+  .btn-start {
+    width: 100%; padding: 17px; border-radius: var(--radius); border: none;
+    background: #fff; color: #1B4FD8; font-size: 17px; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.5px; transition: transform 0.15s, opacity 0.15s;
+  }
+  .btn-start:active { transform: scale(0.97); opacity: 0.9; }
+  .teacher-link { margin-top: 20px; color: rgba(255,255,255,0.5); font-size: 13px; cursor: pointer; text-decoration: underline; }
+
+  /* QUESTION */
+  #screen-question { background: var(--bg); }
+  .q-header { background: #fff; padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
+  .q-progress-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .q-label { font-size: 12px; font-weight: 600; color: var(--blue); letter-spacing: 0.8px; text-transform: uppercase; }
+  .q-counter { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .progress-track { height: 5px; background: #E5E7EB; border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--red)); border-radius: 99px; transition: width 0.4s ease; }
+  .q-body { flex: 1; padding: 24px 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+  .q-card { background: var(--card); border-radius: var(--radius); padding: 22px 20px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+  .q-era { font-size: 11px; font-weight: 600; color: var(--red); letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
+  .q-text { font-size: 18px; font-weight: 700; line-height: 1.5; color: var(--text); }
+  .choice-btn {
+    width: 100%; padding: 17px 18px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+    background: var(--card); font-size: 15px; font-weight: 500; cursor: pointer; text-align: left;
+    display: flex; align-items: center; gap: 14px; transition: all 0.2s; color: var(--text); line-height: 1.4;
+  }
+  .choice-btn:active { transform: scale(0.98); }
+  .choice-btn.selected-A { background: var(--blue-light); border-color: var(--blue); color: var(--blue-dark); }
+  .choice-btn.selected-B { background: var(--red-light); border-color: var(--red); color: var(--red-dark); }
+  .choice-letter { width: 30px; height: 30px; border-radius: 8px; background: #F3F4F6; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; transition: all 0.2s; }
+  .selected-A .choice-letter { background: var(--blue); color: #fff; }
+  .selected-B .choice-letter { background: var(--red); color: #fff; }
+  .reason-card { background: var(--card); border-radius: var(--radius); padding: 18px; border: 1px solid var(--border); display: none; }
+  .reason-card.show { display: block; animation: fadeIn 0.25s ease; }
+  .reason-label { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 10px; }
+  .reason-textarea { width: 100%; border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 14px; color: var(--text); resize: none; outline: none; background: var(--bg); line-height: 1.6; transition: border 0.2s; font-family: inherit; }
+  .reason-textarea:focus { border-color: var(--blue); }
+  .btn-next { width: 100%; padding: 16px; border-radius: var(--radius); border: none; background: linear-gradient(135deg, var(--blue), #2563EB); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; opacity: 0; pointer-events: none; margin-top: 4px; }
+  .btn-next.ready { opacity: 1; pointer-events: all; }
+  .btn-next:active { transform: scale(0.98); }
+
+  /* RESULT */
+  #screen-result { background: var(--bg); }
+  .result-hero { background: linear-gradient(160deg, #0f2d6b 0%, #1B4FD8 60%, #b91c1c 100%); padding: 40px 24px 32px; text-align: center; }
+  .result-emoji { font-size: 54px; margin-bottom: 10px; }
+  .result-label { font-size: 12px; color: rgba(255,255,255,0.7); letter-spacing: 1.5px; font-weight: 600; margin-bottom: 6px; }
+  .result-type { font-size: 26px; font-weight: 800; color: #fff; }
+  .result-body { padding: 20px 20px 40px; display: flex; flex-direction: column; gap: 14px; }
+  .result-card { background: var(--card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
+  .result-card-title { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 12px; }
+  .trait-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 6px 14px; border-radius: 99px; font-size: 13px; font-weight: 600; }
+  .chip-blue { background: var(--blue-light); color: var(--blue-dark); }
+  .chip-red { background: var(--red-light); color: var(--red-dark); }
+  .person-row { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .person-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .person-avatar { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; background: var(--blue-light); }
+  .person-name { font-size: 15px; font-weight: 700; }
+  .person-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .mission-card { background: linear-gradient(135deg, #0f2d6b, #1B4FD8); border-radius: var(--radius); padding: 20px; color: #fff; }
+  .mission-title { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.7); margin-bottom: 14px; }
+  .mission-q { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; color: rgba(255,255,255,0.9); line-height: 1.5; }
+  .mission-q:last-child { border-bottom: none; padding-bottom: 0; }
+  .mission-num { font-weight: 700; color: rgba(255,255,255,0.5); flex-shrink: 0; }
+  .closing-card { text-align: center; padding: 28px 20px; }
+  .closing-quote { font-size: 17px; font-weight: 700; line-height: 1.6; color: var(--text); margin-bottom: 8px; }
+  .closing-sub { font-size: 14px; color: var(--muted); line-height: 1.6; }
+  .action-row { display: flex; gap: 10px; }
+  .btn-share { flex: 1; padding: 14px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; border: 1.5px solid; transition: all 0.15s; }
+  .btn-share-blue { background: var(--blue-light); color: var(--blue-dark); border-color: #93C5FD; }
+  .btn-share-red { background: var(--red-light); color: var(--red-dark); border-color: #FCA5A5; }
+  .btn-share:active { transform: scale(0.97); }
+  .btn-restart { width: 100%; padding: 14px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); }
+
+  /* TEACHER */
+  #screen-teacher { background: var(--bg); }
+  .teacher-header { background: #0f2d6b; padding: 24px 20px 20px; color: #fff; }
+  .teacher-header h2 { font-size: 20px; font-weight: 800; }
+  .teacher-header p { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+  .teacher-body { padding: 16px 16px 30px; }
+  .student-card { background: var(--card); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 10px; border: 1px solid var(--border); }
+  .student-name { font-size: 15px; font-weight: 700; }
+  .student-type { font-size: 13px; color: var(--blue); font-weight: 600; margin-top: 2px; }
+  .student-meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .no-data { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 14px; }
+  .btn-back { padding: 14px 20px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 12px; }
+  .clear-btn { width: 100%; padding: 12px; background: #FEF2F2; color: var(--red-dark); border: 1.5px solid #FCA5A5; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SPLASH -->
+  <div id="screen-splash" class="screen active">
+    <div class="splash-flag">🇰🇷</div>
+    <div class="splash-title">독립운동가의 선택</div>
+    <div class="splash-tagline">
+      <p>당신은 1910년대 조선인입니다.</p>
+      <p>독립을 위해 어떤 선택을 하시겠습니까?</p>
+    </div>
+    <div class="name-input-wrap">
+      <input type="text" id="studentName" placeholder="이름을 입력하세요 (선택)" maxlength="20" />
+    </div>
+    <button class="btn-start" onclick="startGame()">START →</button>
+    <div class="teacher-link" onclick="showTeacher()">👩‍🏫 교사용 결과 보기</div>
+  </div>
+
+  <!-- QUESTION -->
+  <div id="screen-question" class="screen">
+    <div class="q-header">
+      <div class="q-progress-row">
+        <span class="q-label">선택의 순간</span>
+        <span class="q-counter" id="qCounter">Q1 / Q8</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width:12.5%"></div>
+      </div>
+    </div>
+    <div class="q-body">
+      <div class="q-card">
+        <div class="q-era">1910년대 조선 · 선택지</div>
+        <div class="q-text" id="qText"></div>
+      </div>
+      <button class="choice-btn" id="btnA" onclick="choose('A')">
+        <span class="choice-letter">A</span>
+        <span id="choiceA"></span>
+      </button>
+      <button class="choice-btn" id="btnB" onclick="choose('B')">
+        <span class="choice-letter">B</span>
+        <span id="choiceB"></span>
+      </button>
+      <div class="reason-card" id="reasonCard">
+        <div class="reason-label">💬 선택 이유를 적어보세요 (선택 사항)</div>
+        <textarea class="reason-textarea" id="reasonInput" rows="3" placeholder="왜 이 선택을 했나요? 자유롭게 써보세요."></textarea>
+      </div>
+      <button class="btn-next" id="btnNext" onclick="nextQuestion()">다음 질문 →</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="screen-result" class="screen">
+    <div class="result-hero">
+      <div class="result-emoji" id="resultEmoji">⚔️</div>
+      <div class="result-label">당신의 독립운동 유형</div>
+      <div class="result-type" id="resultType"></div>
+    </div>
+    <div class="result-body">
+      <div class="result-card">
+        <div class="result-card-title">유형 설명</div>
+        <div id="resultDesc" style="font-size:15px;line-height:1.7;color:var(--text)"></div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-title">핵심 특징</div>
+        <div class="trait-chips" id="traitChips"></div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-title">대표 인물</div>
+        <div id="personList"></div>
+      </div>
+      <div class="mission-card">
+        <div class="mission-title">🗺 하얼빈·대련 탐방 미션</div>
+        <div id="missionList"></div>
+      </div>
+      <div class="result-card closing-card">
+        <div class="closing-quote">"독립운동에는 정답이 없었습니다."</div>
+        <div class="closing-sub">서로 다른 선택이 모여<br>광복을 만들었습니다.</div>
+      </div>
+      <div class="action-row">
+        <button class="btn-share btn-share-blue" onclick="shareResult()">📤 공유하기</button>
+        <button class="btn-share btn-share-red" onclick="showQR()">📱 QR 코드</button>
+      </div>
+      <button class="btn-restart" onclick="restart()">↺ 다시 시작하기</button>
+    </div>
+  </div>
+
+  <!-- TEACHER -->
+  <div id="screen-teacher" class="screen">
+    <div class="teacher-header">
+      <h2>👩‍🏫 교사용 결과 보기</h2>
+      <p>학생들의 선택 패턴을 확인하세요</p>
+    </div>
+    <div class="teacher-body" id="teacherBody"></div>
+  </div>
+
+</div>
+<script>
+const questions = [
+  { q:"일제의 감시가 심해지고 있습니다.", a:"국내에 남아 독립운동을 한다", b:"해외로 망명하여 독립운동 기지를 세운다" },
+  { q:"독립운동 자금이 부족합니다.", a:"재산 대부분을 독립운동에 사용한다", b:"가족의 생계를 위해 일부만 지원한다" },
+  { q:"독립운동에 참여하면 체포될 수 있습니다.", a:"만세 시위에 참여한다", b:"뒤에서 지원하며 돕는다" },
+  { q:"독립을 위해 더 중요한 것은?", a:"무장투쟁", b:"외교활동" },
+  { q:"독립을 위해 더 필요한 것은?", a:"용기", b:"전략" },
+  { q:"학생인 당신에게 선택의 순간이 왔습니다.", a:"학교를 그만두고 독립운동에 참여한다", b:"공부를 계속하며 미래를 준비한다" },
+  { q:"독립운동 방법을 선택해야 합니다.", a:"독립군 양성", b:"민족 교육" },
+  { q:"광복이 가까워지고 있습니다.", a:"무장투쟁 확대", b:"광복 이후 국가 건설 준비" }
+];
+
+const types = {
+  action: {
+    name:"행동형 독립운동가", emoji:"⚔️",
+    desc:"결단력과 실천력이 뛰어납니다. 위험을 감수하더라도 직접 뛰어들어 변화를 만드는 유형입니다. 안중근 의사처럼 신념을 행동으로 옮기는 용기를 지녔습니다.",
+    traits:["결단력","실천력","위험 감수"],
+    persons:[{emoji:"🎯",name:"안중근",desc:"하얼빈 의거로 이토 히로부미에 맞서다"},{emoji:"🏹",name:"김좌진",desc:"청산리 대첩을 이끈 독립군 장군"}],
+    mission:["왜 안중근은 하얼빈을 선택했을까?","나는 그와 같은 선택을 할 수 있었을까?","독립운동은 총을 든 사람만 했을까?"]
+  },
+  strategy: {
+    name:"전략형 독립운동가", emoji:"🧭",
+    desc:"장기적인 안목과 치밀한 계획으로 독립운동을 이끄는 유형입니다. 조직을 운영하고 큰 그림을 그리는 데 탁월합니다. 신중하지만 끈기 있게 목표를 향해 나아갑니다.",
+    traits:["장기 계획","조직 운영","신중함"],
+    persons:[{emoji:"📢",name:"안창호",desc:"독립협회와 흥사단을 조직한 계몽운동가"},{emoji:"📜",name:"신채호",desc:"역사로 민족 정신을 깨운 독립사상가"}],
+    mission:["안창호는 왜 교육을 독립의 무기로 삼았을까?","민족 정신을 지키는 것이 왜 중요할까?","나라면 어떤 방법으로 독립을 준비할까?"]
+  },
+  pioneer: {
+    name:"개척형 독립운동가", emoji:"🌏",
+    desc:"새로운 길을 개척하고 도전 정신이 넘치는 유형입니다. 해외에서 독립운동 기지를 세우며 불모지에서 희망을 찾았습니다. 이회영처럼 모든 것을 버리고 새 길을 여는 용기가 있습니다.",
+    traits:["새로운 길 개척","해외 활동","도전 정신"],
+    persons:[{emoji:"🌟",name:"이회영",desc:"전 재산을 팔아 만주 독립기지를 세우다"},{emoji:"🏫",name:"서전서숙 설립자들",desc:"간도에서 민족 교육의 씨앗을 뿌리다"}],
+    mission:["이회영은 왜 모든 것을 포기했을까?","타지에서 독립운동을 한다는 것은 어떤 의미일까?","오늘날 우리가 배울 수 있는 것은 무엇일까?"]
+  },
+  balance: {
+    name:"균형형 독립운동가", emoji:"⚖️",
+    desc:"상황을 종합적으로 판단하고 다양한 방법을 유연하게 활용하는 유형입니다. 협력을 중시하며 무장투쟁부터 교육, 외교까지 필요에 따라 최선의 방법을 선택합니다.",
+    traits:["상황 판단","협력 중시","다양한 방법"],
+    persons:[{emoji:"🤝",name:"다양한 독립운동가들",desc:"각자의 자리에서 힘을 합쳐 광복을 만들다"}],
+    mission:["독립운동에서 왜 협력이 중요했을까?","서로 다른 방법이 어떻게 하나의 목표를 향했을까?","오늘날 우리가 배울 수 있는 협력의 가치는?"]
+  }
+};
+
+let current = 0, answers = [], reasons = [], playerName = "";
+
+function startGame() {
+  playerName = document.getElementById('studentName').value.trim() || "학생";
+  current = 0; answers = []; reasons = [];
+  showScreen('question');
+  renderQ();
+}
+
+function renderQ() {
+  const q = questions[current];
+  document.getElementById('qCounter').textContent = `Q${current+1} / Q8`;
+  document.getElementById('progressFill').style.width = `${((current+1)/8)*100}%`;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('choiceA').textContent = q.a;
+  document.getElementById('choiceB').textContent = q.b;
+  document.getElementById('btnA').className = 'choice-btn';
+  document.getElementById('btnB').className = 'choice-btn';
+  document.getElementById('reasonCard').className = 'reason-card';
+  document.getElementById('reasonInput').value = '';
+  const btn = document.getElementById('btnNext');
+  btn.className = 'btn-next';
+  delete btn._choice;
+}
+
+function choose(c) {
+  document.getElementById('btnA').className = 'choice-btn' + (c==='A' ? ' selected-A' : '');
+  document.getElementById('btnB').className = 'choice-btn' + (c==='B' ? ' selected-B' : '');
+  document.getElementById('reasonCard').className = 'reason-card show';
+  const btn = document.getElementById('btnNext');
+  btn.className = 'btn-next ready';
+  btn._choice = c;
+}
+
+function nextQuestion() {
+  const btn = document.getElementById('btnNext');
+  const c = btn._choice;
+  if (!c) return;
+  answers.push(c);
+  reasons.push(document.getElementById('reasonInput').value.trim());
+  if (current < 7) { current++; renderQ(); }
+  else { showResult(); }
+}
+
+function calcType() {
+  const aCount = answers.filter(x=>x==='A').length;
+  const bCount = 8 - aCount;
+  if (aCount >= 6) return 'action';
+  if (bCount >= 6) return 'strategy';
+  const pioneer = (answers[0]==='B' || answers[5]==='A') && aCount >= 3;
+  if (pioneer) return 'pioneer';
+  return 'balance';
+}
+
+function showResult() {
+  const t = types[calcType()];
+  document.getElementById('resultEmoji').textContent = t.emoji;
+  document.getElementById('resultType').textContent = t.name;
+  document.getElementById('resultDesc').textContent = t.desc;
+  document.getElementById('traitChips').innerHTML = t.traits.map((tr,i)=>`<span class="chip ${i%2===0?'chip-blue':'chip-red'}">${tr}</span>`).join('');
+  document.getElementById('personList').innerHTML = t.persons.map(p=>`<div class="person-row"><div class="person-avatar">${p.emoji}</div><div><div class="person-name">${p.name}</div><div class="person-desc">${p.desc}</div></div></div>`).join('');
+  document.getElementById('missionList').innerHTML = t.mission.map((m,i)=>`<div class="mission-q"><span class="mission-num">Q${i+1}</span><span>${m}</span></div>`).join('');
+  try {
+    const records = JSON.parse(localStorage.getItem('independence_records')||'[]');
+    records.push({ name:playerName, type:t.name, emoji:t.emoji, answers:[...answers], reasons:[...reasons], date:new Date().toLocaleDateString('ko-KR') });
+    localStorage.setItem('independence_records', JSON.stringify(records));
+  } catch(e){}
+  showScreen('result');
+}
+
+function showTeacher() {
+  try {
+    const records = JSON.parse(localStorage.getItem('independence_records')||'[]');
+    const body = document.getElementById('teacherBody');
+    if (!records.length) {
+      body.innerHTML = '<div class="no-data">아직 참여한 학생이 없습니다.<br>학생들이 게임을 완료하면 여기에 표시됩니다.</div>';
+    } else {
+      body.innerHTML = records.map(r=>`<div class="student-card"><div class="student-name">${r.emoji} ${r.name}</div><div class="student-type">${r.type}</div><div class="student-meta">${r.date} · 선택: ${r.answers.join(', ')}</div></div>`).join('') +
+        `<button class="clear-btn" onclick="clearRecords()">🗑 기록 초기화</button>`;
+    }
+    body.innerHTML += `<button class="btn-back" onclick="showScreen('splash')">← 돌아가기</button>`;
+  } catch(e){}
+  showScreen('teacher');
+}
+
+function clearRecords() {
+  if (confirm('모든 학생 기록을 삭제할까요?')) {
+    localStorage.removeItem('independence_records');
+    showTeacher();
+  }
+}
+
+function shareResult() {
+  const t = types[calcType()];
+  const text = `독립운동가의 선택\n나의 유형: ${t.emoji} ${t.name}\n\n서로 다른 선택이 모여 광복을 만들었습니다.`;
+  if (navigator.share) navigator.share({ title:'독립운동가의 선택', text });
+  else { navigator.clipboard.writeText(text); alert('결과가 클립보드에 복사되었습니다!'); }
+}
+
+function showQR() {
+  const url = location.href;
+  window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`, '_blank');
+}
+
+function restart() { showScreen('splash'); }
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
